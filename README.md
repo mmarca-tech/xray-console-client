@@ -1,97 +1,46 @@
 # Xray Console Client
 
-## Description
-Simple console client that comunicates to Jira Xray and uploads tests and executions
+A .NET 10 command-line client that imports test results into Xray and links executions to Jira issues.
 
-## Features
+## Build and Test
 
-### Current features
-
- - Create/update test executions (With its test cases)
-    - Specflow TestExecution.json results
-        - Does not support attachment yet
-        - Does not support steps yet
-        - Does not support labels yet
-    - Junit xml results
-        - Does not support attachment yet
-        - Does not support steps yet
-        - Does not support labels yet
-    - Allure xml results
-        - Support attachment
-        - Support steps
-        - Does not support labels yet
-    - Allure json results
-        - Support attachment
-        - Support steps
-        - Support labels
-    - Cucumber json results
-        - Support attachment
-        - Support steps
-        - Support labels
- - Mapping
-    - Map test execution to test plans
-    - Map test execution to jira issues
-    - Map test cases to test plans
-    - Add jira custom fields in test cases
-
-### Incoming features
-
-- Create/update executions
-    - Tell me what you need
-- Mapping
-    - Add Xray custom fields in test cases
-    - Tell me what you need
-
-## Usage
-
-### Execution uploader
-
-```
-node executionUploader.js --ju $(jiraUrl) --jbt $(jira_basic_token) --xu $(xrayUrl) --ci $(jira_client_id) --cs $(jira_client_secret) --tt $(testType) --f $(folder/file) --pk $(projectKey) --pn $(testPlanKey) --s 'Test execution for $(issueKey)' -e ${executionKey} -d ${description} --rv {releaseVersion} --i $(issueKey) --ilt ${issueLinkType} --e {environments} --jcf {jiraCustomFields}
+```powershell
+dotnet build xray-console-client.slnx
+dotnet test tests/XrayConsoleClient.Tests/XrayConsoleClient.Tests.csproj
 ```
 
-| Flag              | Full Option         | Description                                                                                           | Required |
-|-------------------|---------------------|-------------------------------------------------------------------------------------------------------|----------|
-| NO FLAG AVAILABLE | --help              | Show help                                                                                             | NO       |
-| --ju              | --jiraUrl           | Jira Url in case you want to link executions to jira issues                                           | YES      |
-| --jbt             | --jiraBasicToken    | Jira Token (PAT) in case you want to link executions to jira issues                                   | YES      |
-| --ci              | --clientId          | Xray client ID to connect                                                                             | YES      |
-| --cs              | --clientSecret      | Xray client Secret to connect                                                                         | YES      |
-| --xu              | --xrayUrl           | Xray url to connect                                                                                   | YES      |
-| --tt              | --testType          | Type of execution to be uploaded, it can be cucumber-specflow , allure-xml , allure-json , junit      | YES      |
-| -f                | --filePath          | Path to the folder with files or a file specific                                                      | YES      |
-| --pk              | --projectKey        | Project key where to upload execution                                                                 | YES      |
-| --pn              | --planKey           | Plan key where to map execution                                                                       | NO       |
-| --ek              | --executionKey      | Execution key of execution to be updated instead of creating a new one                                | NO       |
-| --s               | --summary           | Test Execution Summary, in case new one is created, if none is passed , generic will be set           | NO       |
-| --d               | --description       | Test Execution Description, if none is passed , generic will be set                                   | NO       |
-| --rv              | --releaseVersion    | Release version which this test execution is linked                                                   | NO       |
-| --i               | --issueKey          | Issue to be linked to executions (Youll need a Jira url and Jira token, only available for JIRA CLOUD | NO       |
-| --ilt             | --issueLinkType     | Issue to be linked to executions, needs issueLinkType                                                 | NO       |
-| --e               | --environments      | Xray test enviroment variable                                                                         | NO       |
-| --jcf             | --jiraCustomFields  | Custom fields added to test case ticket, can be multiple passed like '$id,$value                      | NO       |
+## Run
 
+The root `XrayUploadResults.cs` launcher accepts the same options as the former console client. Required credentials and URLs can be supplied as options or environment variables.
 
-Example
+```powershell
+$env:XRAY_BASE_URL = 'https://xray.cloud.getxray.app'
+$env:XRAY_CLIENT_ID = 'your-client-id'
+$env:XRAY_CLIENT_SECRET = 'your-client-secret'
+$env:JIRA_URL = 'https://your-domain.atlassian.net'
+$env:JIRA_BASIC_TOKEN = 'base64-email-and-api-token'
 
-```
-node executionUploader.js --tt specflow --f './executions/TestExecution.json' --pk TT --pn TT-1111 --s 'Test execution for $(issueKey)' --xu https://xray.cloud.getxray.app --ci AAAAAAAAAAAAAA --cs BBBBBBBBBBBBB  --i TT-1234 --ju https://yourCompany.atlassian.net) --jbt CCCCCCCCCCCCCCCCC
+dotnet run --file .\XrayUploadResults.cs -- --tt junit-xml --f .\test-results --pk PROJECT
 ```
 
-## Docker
+Run with `--help` to see all options and supported result formats. Keep credentials in environment variables or a secret store; do not commit them.
 
-This console application comes already dockerized, and you can find the image in here:
+## Release Package
 
-[Docker image](https://hub.docker.com/repository/docker/marca1234/xray-console-client/general)
+Push a version tag such as `v1.0.0` to run the GitHub Actions workflow. It runs the unit tests, publishes the `xray-console-client` .NET tool to GitHub Packages, and attaches `xray-console-client-linux-x64.tar.gz` to the GitHub Release. The tarball is a self-contained Linux x64 executable and does not require the .NET runtime on the consuming agent. The NuGet tool requires the .NET 10 runtime.
 
-### Usage
+### Install from GitHub Packages
 
-Copy files in container
+Create a GitHub personal access token with `read:packages`, then configure the NuGet source and credentials:
+
+```powershell
+dotnet nuget add source https://nuget.pkg.github.com/mmarca-tech/index.json `
+	--name github `
+	--username YOUR_GITHUB_USERNAME `
+	--password YOUR_GITHUB_TOKEN `
+	--store-password-in-clear-text
+
+dotnet tool install --global xray-console-client --version 1.0.0 --add-source github
 ```
-docker cp ./TestExecution.json xray_console_client:app/executions/TestExecution.json
-```
 
-Execute commands
-```
-docker exec xray_console_client node executionUploader.js --tt specflow --f './executions/TestExecution.json' --pk TT --pn TT-1111 --s 'Test execution for $(issueKey)' --xu https://xray.cloud.getxray.app --ci AAAAAAAAAAAAAA --cs BBBBBBBBBBBBB --ju https://yourCompany.atlassian.net) --jbt CCCCCCCCCCCCCCCCC
-```
+The installed command is `xray-console-client`. Use `dotnet tool update --global xray-console-client --version <version> --add-source github` to upgrade it.

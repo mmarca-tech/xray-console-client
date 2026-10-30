@@ -1,6 +1,4 @@
-*.zip
-testData/
-jsconfig.js
-node_modules/
-package-lock.json
-.idea/
+**/bin/
+**/obj/
+publish/
+*.tar.gz

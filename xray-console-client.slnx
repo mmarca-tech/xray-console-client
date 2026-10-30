@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/XrayConsoleClient/XrayConsoleClient.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/XrayConsoleClient.Tests/XrayConsoleClient.Tests.csproj" />
+  </Folder>
+</Solution>
